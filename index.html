@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinación Efectiva</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    <!-- Quill -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+        rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="style.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- =============================================
+       LOGIN OVERLAY
+       ============================================= -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card">
+            <div class="login-brand-icon mx-auto">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <h3 class="login-title">Coordinación Efectiva</h3>
+            <p class="login-subtitle">Selecciona tu perfil para continuar</p>
+
+            <!-- Perfiles dinámicos -->
+            <div id="loginPerfiles" class="login-perfiles-grid"></div>
+
+            <!-- Acceso admin con candadito -->
+            <div class="login-admin-area">
+                <button class="btn-admin-login" id="btnAdminLogin" title="Acceso administrador">
+                    <i class="fas fa-lock"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================
+       LOADING OVERLAY
+       ============================================= -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner-container">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3 fw-medium text-primary">Cargando datos...</p>
+        </div>
+    </div>
+
+    <!-- =============================================
+       NAVBAR
+       ============================================= -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-xxl px-3">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <i class="fas fa-tasks text-primary"></i>
+                <span>Coordinación Efectiva</span>
+            </a>
+
+            <!-- Usuario activo -->
+            <div id="navUserInfo" class="d-flex align-items-center gap-2 d-none ms-auto">
+                <span id="navAdminBadge" class="badge bg-warning text-dark d-none">Admin</span>
+                <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                    onclick="cambiarPerfil()">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="navUserName"></span>
+                    <i class="fas fa-exchange-alt" style="font-size:0.6rem;opacity:0.6"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- =============================================
+       CONTENIDO PRINCIPAL
+       ============================================= -->
+    <div class="container-xxl py-4 px-3">
+
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl col-md-6">
+                <div class="card stat-card border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1" style="font-size:.82rem">Total Tareas</h6>
+                                <h3 class="mb-0 fw-bold" id="statTotal">0</h3>
+                            </div>
+                            <div class="stat-icon bg-primary-subtle">
+                                <i class="fas fa-list-check text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl col-md-6">
+                <div class="card stat-card border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1" style="font-size:.82rem">En Proceso</h6>
+                                <h3 class="mb-0 fw-bold text-warning" id="statEnProceso">0</h3>
+                            </div>
+                            <div class="stat-icon bg-warning-subtle">
+                                <i class="fas fa-spinner text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl col-md-6">
+                <div class="card stat-card border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1" style="font-size:.82rem">Terminadas</h6>
+                                <h3 class="mb-0 fw-bold text-success" id="statCompletadas">0</h3>
+                            </div>
+                            <div class="stat-icon bg-success-subtle">
+                                <i class="fas fa-check-circle text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl col-md-6">
+                <div class="card stat-card border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1" style="font-size:.82rem">No terminadas</h6>
+                                <h3 class="mb-0 fw-bold text-danger" id="statPendientes">0</h3>
+                            </div>
+                            <div class="stat-icon bg-info-subtle">
+                                <i class="fas fa-clock text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl col-md-6">
+                <div class="card stat-card border-0">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1" style="font-size:.82rem">Cumplimiento</h6>
+                                <h3 class="mb-0 fw-bold" id="statCumplimiento" style="color:#0891b2">0%</h3>
+                                <div class="progress mt-2" style="height:6px; min-width:80px">
+                                    <div id="statCumplimientoBar" class="progress-bar"
+                                        style="width:0%;background:#0891b2"></div>
+                                </div>
+                            </div>
+                            <div class="stat-icon" style="background:#e0f9ff">
+                                <i class="fas fa-chart-pie" style="color:#0891b2"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card border-0 mb-4">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label">Desde</label>
+                        <input type="date" id="filterDesde" class="form-control">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Hasta</label>
+                        <input type="date" id="filterHasta" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" id="filterResponsibleLabel">
+                            Responsable
+                        </label>
+                        <select id="filterResponsible" class="form-select">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Estado</label>
+                        <select id="filterEstado" class="form-select">
+                            <option value="">Todos</option>
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Terminado">Terminado</option>
+                            <option value="No terminado">No terminado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2 align-items-end">
+                        <button id="btnFiltrar" class="btn btn-dark flex-fill">
+                            <i class="fas fa-filter me-1"></i>Filtrar
+                        </button>
+                        <button id="btnLimpiar" class="btn btn-outline-secondary flex-fill">
+                            <i class="fas fa-times me-1"></i>Limpiar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista de Tareas -->
+        <div class="card border-0 mb-4">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-semibold"><i class="fas fa-list-ul me-2 text-primary"></i>Lista de Tareas</h5>
+                <div class="d-flex gap-2 align-items-center">
+                    <input type="search" id="searchInput" class="form-control form-control-sm"
+                        placeholder="Buscar tarea..." style="width:200px">
+                    <button class="btn btn-primary" id="btnNuevaTarea">
+                        <i class="fas fa-plus me-1"></i>Nueva Tarea
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" id="tableContainer">
+                    <!-- Tabla renderizada por JS -->
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /container -->
+
+
+    <!-- =============================================
+       MODAL CREAR / EDITAR TAREA
+       ============================================= -->
+    <div class="modal fade" id="taskModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+
+                <!-- Spinner overlay -->
+                <div id="modal-spinner-overlay">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-3 text-muted">Guardando, espere...</p>
+                </div>
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle"><i class="fas fa-tasks me-2 text-primary"></i>Nueva Tarea
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <form id="taskForm" novalidate>
+                        <input type="hidden" id="formTaskId">
+
+                        <div class="row g-4">
+                            <!-- Columna izquierda principal -->
+                            <div class="col-md-8">
+
+                                <!-- Título -->
+                                <div class="mb-3">
+                                    <label class="form-label">Título de la Tarea <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" id="formTitulo" class="form-control"
+                                        placeholder="Ej: Revisar informe mensual" required>
+                                </div>
+
+                                <!-- Descripción (Quill) -->
+                                <div class="mb-3">
+                                    <label class="form-label">Descripción</label>
+                                    <div id="editorDescripcion"></div>
+                                </div>
+
+                                <!-- Adjuntar Capturas -->
+                                <div class="mb-3">
+                                    <label class="form-label"><i class="fas fa-paperclip me-1 text-muted"></i>Capturas /
+                                        Adjuntos</label>
+
+                                    <!-- Imágenes existentes (en modo edición) -->
+                                    <div id="existing-images-wrapper" class="mb-2" style="display:none">
+                                        <div class="d-flex gap-2 flex-wrap" id="existing-images"></div>
+                                    </div>
+
+                                    <!-- Dropzone para nuevas imágenes -->
+                                    <div id="image-drop-zone">
+                                        <div class="drop-content">
+                                            <div class="drop-text-default">
+                                                <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                                <p class="mb-0 text-muted small">Arrastra imágenes, pega (Ctrl+V) o haz
+                                                    clic</p>
+                                            </div>
+                                            <div class="drop-text-active">
+                                                <i class="fas fa-thumbs-up fa-2x text-primary mb-2"></i>
+                                                <p class="mb-0 text-primary small">¡Suelta para agregar!</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="imageUpload" multiple accept="image/*" class="d-none">
+                                    <div id="image-preview-wrapper">
+                                        <div id="image-preview"></div>
+                                    </div>
+                                </div>
+
+                            </div><!-- /col-md-8 -->
+
+                            <!-- Columna derecha detalles -->
+                            <div class="col-md-4">
+                                <div class="p-3 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0">
+                                    <h6 class="mb-3 fw-semibold text-muted"
+                                        style="font-size:.82rem;text-transform:uppercase;letter-spacing:.5px">Detalles
+                                    </h6>
+
+                                    <!-- Estado -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                        <select id="formEstado" class="form-select" required>
+                                            <option value="En Proceso">En Proceso</option>
+                                            <option value="Terminado">Terminado</option>
+                                            <option value="No terminado">No terminado</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Fecha a terminar -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Fecha a Terminar</label>
+                                        <input type="date" id="formFechaTerminar" class="form-control">
+                                    </div>
+
+                                    <!-- Responsables -->
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label mb-0">Responsable(s) <span class="text-danger"
+                                                    id="respAsterisk">*</span></label>
+                                            <!-- Badge del perfil fijo (no-admin) -->
+                                            <span id="responsableFijo" class="d-none"></span>
+                                        </div>
+                                        <!-- Select2 para responsables adicionales -->
+                                        <select id="formResponsables" class="form-select" multiple>
+                                            <!-- opciones por JS -->
+                                        </select>
+                                        <small id="respHelpText" class="text-muted d-none" style="font-size:.75rem">
+                                            <i class="fas fa-info-circle me-1"></i>Agrega responsables adicionales
+                                        </small>
+                                    </div>
+
+                                    <!-- Comentarios (input normal) -->
+                                    <div class="mb-3">
+                                        <label class="form-label">Comentarios</label>
+                                        <textarea id="formComentarios" class="form-control" rows="3"
+                                            placeholder="Agrega un comentario..."></textarea>
+                                    </div>
+
+                                </div>
+                            </div><!-- /col-md-4 -->
+
+                        </div><!-- /row -->
+                    </form>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    <button type="button" id="btnGuardarTarea" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Guardar Tarea
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- =============================================
+       SCRIPTS
+       ============================================= -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
+    <script src="main.js"></script>
+</body>
+
+</html>
