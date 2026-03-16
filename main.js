@@ -21,6 +21,7 @@ let _cachedAdminPass = null;
 let _tareasCargadas = false;
 let taskModal = null;
 let quillDesc = null;
+let quillComentarios = null;
 let uploadedFiles = [];      // Nuevas imágenes seleccionadas en el form
 let existingImages = [];     // URLs de imágenes existentes (modo edición)
 
@@ -53,6 +54,19 @@ function initQuill() {
             ]
         },
         placeholder: 'Describe la tarea...'
+    });
+
+    quillComentarios = new Quill('#editorComentarios', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                ['link'],
+                ['clean']
+            ]
+        },
+        placeholder: 'Agrega un comentario...'
     });
 }
 
@@ -337,7 +351,7 @@ function getFilteredData() {
         if (estado && t.estado !== estado) return false;
         // Búsqueda general
         if (search) {
-            const haystack = `${t.titulo} ${t.responsables} ${t.comentarios}`.toLowerCase();
+            const haystack = `${t.titulo} ${t.responsables} ${stripHtml(t.comentarios || '')}`.toLowerCase();
             if (!haystack.includes(search)) return false;
         }
         return true;
@@ -456,7 +470,7 @@ function buildExpandContent(t) {
 
     // Comentarios
     const comHtml = t.comentarios
-        ? `<p class="mb-0" style="font-size:.9rem">${escHtml(t.comentarios)}</p>`
+        ? `<div class="ql-snow ql-readonly-content"><div class="ql-editor p-0" style="font-size:.9rem">${t.comentarios}</div></div>`
         : '<em class="text-muted small">Sin comentarios.</em>';
 
     // Fecha actualización
@@ -629,8 +643,8 @@ function openModal(taskId = null) {
         $('#formTitulo').val(t.titulo);
         quillDesc.root.innerHTML = t.descripcion || '';
         $('#formEstado').val(t.estado);
-        $('#formFechaTerminar').val(t.fechaTerminar);
-        $('#formComentarios').val(t.comentarios);
+        $('#formFechaTerminar').val(toDateInputValue(t.fechaTerminar));
+        quillComentarios.root.innerHTML = t.comentarios || '';
 
         // Responsables
         const resps = t.responsables.split('||').map(r => r.trim()).filter(Boolean);
@@ -651,6 +665,7 @@ function openModal(taskId = null) {
         $('#modalTitle').html('<i class="fas fa-plus me-2 text-primary"></i>Nueva Tarea');
         // Si es perfil no-admin, no preselectar nada extra
     }
+    activateTaskTab('#tab-contenido');
     taskModal.show();
 }
 
@@ -658,6 +673,7 @@ function clearForm() {
     $('#taskForm')[0].reset();
     $('#formTaskId').val('');
     if (quillDesc) quillDesc.setText('');
+    if (quillComentarios) quillComentarios.setText('');
     uploadedFiles = []; existingImages = [];
     renderPreviews();
     renderExistingImages();
@@ -775,7 +791,7 @@ async function handleFormSubmit() {
             responsables: responsables.join(SEP),
             fechaTerminar: $('#formFechaTerminar').val(),
             estado: $('#formEstado').val(),
-            comentarios: $('#formComentarios').val().trim(),
+            comentarios: getQuillHtml(quillComentarios),
             capturas: capturas
         };
 
@@ -949,6 +965,42 @@ function formatFechaTerminar(dateStr) {
     return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function toDateInputValue(dateStr) {
+    if (!dateStr) return '';
+
+    const raw = String(dateStr).trim();
+    const clean = raw.split(',')[0].trim();
+
+    // yyyy-MM-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
+
+    // d/M/yyyy o dd/MM/yyyy
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(clean)) {
+        const [day, month, year] = clean.split('/').map(v => parseInt(v, 10));
+        if (!day || !month || !year) return '';
+        const d = new Date(year, month - 1, day);
+        if (isNaN(d)) return '';
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    // ISO u otros formatos parseables
+    const d = new Date(raw);
+    if (isNaN(d)) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function getQuillHtml(editor) {
+    if (!editor) return '';
+    const txt = editor.getText().trim();
+    if (!txt) return '';
+    return editor.root.innerHTML;
+}
+
+function stripHtml(html) {
+    if (!html) return '';
+    return String(html).replace(/<[^>]*>/g, ' ');
+}
+
 function getDateClass(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr + 'T00:00:00');
@@ -967,4 +1019,10 @@ function debounce(fn, delay) {
         clearTimeout(timer);
         timer = setTimeout(() => fn.apply(this, args), delay);
     };
+}
+
+function activateTaskTab(targetSelector) {
+    const btn = document.querySelector(`#taskFormTabs button[data-bs-target="${targetSelector}"]`);
+    if (!btn || !window.bootstrap?.Tab) return;
+    bootstrap.Tab.getOrCreateInstance(btn).show();
 }

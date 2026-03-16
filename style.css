@@ -322,7 +322,7 @@ body {
     background: #f8fafc;
     border-top: 1px solid var(--border);
     border-radius: 0 0 12px 12px;
-    padding: 1.25rem 1.5rem;
+    padding: 1rem 1.25rem;
     display: none;
 }
 
@@ -683,8 +683,41 @@ body {
     background: #fff;
 }
 
-.ql-editor {
+#editorDescripcion .ql-editor,
+#editorComentarios .ql-editor {
     min-height: 160px;
+}
+
+.ql-readonly-content .ql-editor,
+.task-expand-inner .ql-editor {
+    min-height: 0 !important;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* ============================================
+   MODAL FORM UX (Tabs + panel)
+   ============================================ */
+.modal-task-tabs {
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-task-tabs .nav-link {
+    border: 0;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 0.55rem 0.9rem;
+    border-radius: 8px 8px 0 0;
+}
+
+.modal-task-tabs .nav-link.active {
+    color: var(--primary);
+    background: #eef2ff;
+}
+
+.task-details-panel {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
 }
 
 /* ============================================
@@ -829,5 +862,10 @@ body {
 
     .login-perfil-card {
         min-width: 80px;
+    }
+
+    #editorDescripcion .ql-editor,
+    #editorComentarios .ql-editor {
+        min-height: 120px;
     }
 }

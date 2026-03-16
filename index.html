@@ -264,14 +264,29 @@
                     <form id="taskForm" novalidate>
                         <input type="hidden" id="formTaskId">
 
-                        <div class="row g-4">
-                            <!-- Columna izquierda principal -->
-                            <div class="col-md-8">
+                        <ul class="nav nav-tabs modal-task-tabs mb-3" id="taskFormTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="tab-contenido-btn" data-bs-toggle="tab"
+                                    data-bs-target="#tab-contenido" type="button" role="tab" aria-controls="tab-contenido"
+                                    aria-selected="true">
+                                    <i class="fas fa-align-left me-1"></i>Contenido
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab-detalles-btn" data-bs-toggle="tab"
+                                    data-bs-target="#tab-detalles" type="button" role="tab" aria-controls="tab-detalles"
+                                    aria-selected="false">
+                                    <i class="fas fa-circle-info me-1"></i>Detalles y Comentarios
+                                </button>
+                            </li>
+                        </ul>
 
+                        <div class="tab-content" id="taskFormTabsContent">
+                            <div class="tab-pane fade show active" id="tab-contenido" role="tabpanel"
+                                aria-labelledby="tab-contenido-btn">
                                 <!-- Título -->
                                 <div class="mb-3">
-                                    <label class="form-label">Título de la Tarea <span
-                                            class="text-danger">*</span></label>
+                                    <label class="form-label">Título de la Tarea <span class="text-danger">*</span></label>
                                     <input type="text" id="formTitulo" class="form-control"
                                         placeholder="Ej: Revisar informe mensual" required>
                                 </div>
@@ -283,7 +298,7 @@
                                 </div>
 
                                 <!-- Adjuntar Capturas -->
-                                <div class="mb-3">
+                                <div class="mb-2">
                                     <label class="form-label"><i class="fas fa-paperclip me-1 text-muted"></i>Capturas /
                                         Adjuntos</label>
 
@@ -311,16 +326,10 @@
                                         <div id="image-preview"></div>
                                     </div>
                                 </div>
+                            </div>
 
-                            </div><!-- /col-md-8 -->
-
-                            <!-- Columna derecha detalles -->
-                            <div class="col-md-4">
-                                <div class="p-3 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0">
-                                    <h6 class="mb-3 fw-semibold text-muted"
-                                        style="font-size:.82rem;text-transform:uppercase;letter-spacing:.5px">Detalles
-                                    </h6>
-
+                            <div class="tab-pane fade" id="tab-detalles" role="tabpanel" aria-labelledby="tab-detalles-btn">
+                                <div class="p-3 rounded-3 task-details-panel">
                                     <!-- Estado -->
                                     <div class="mb-3">
                                         <label class="form-label">Estado <span class="text-danger">*</span></label>
@@ -342,10 +351,8 @@
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <label class="form-label mb-0">Responsable(s) <span class="text-danger"
                                                     id="respAsterisk">*</span></label>
-                                            <!-- Badge del perfil fijo (no-admin) -->
                                             <span id="responsableFijo" class="d-none"></span>
                                         </div>
-                                        <!-- Select2 para responsables adicionales -->
                                         <select id="formResponsables" class="form-select" multiple>
                                             <!-- opciones por JS -->
                                         </select>
@@ -354,17 +361,14 @@
                                         </small>
                                     </div>
 
-                                    <!-- Comentarios (input normal) -->
-                                    <div class="mb-3">
+                                    <!-- Comentarios (Quill) -->
+                                    <div class="mb-1">
                                         <label class="form-label">Comentarios</label>
-                                        <textarea id="formComentarios" class="form-control" rows="3"
-                                            placeholder="Agrega un comentario..."></textarea>
+                                        <div id="editorComentarios"></div>
                                     </div>
-
                                 </div>
-                            </div><!-- /col-md-4 -->
-
-                        </div><!-- /row -->
+                            </div>
+                        </div>
                     </form>
                 </div>
 
