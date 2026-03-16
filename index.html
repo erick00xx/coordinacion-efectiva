@@ -270,6 +270,7 @@
                                     data-bs-target="#tab-contenido" type="button" role="tab" aria-controls="tab-contenido"
                                     aria-selected="true">
                                     <i class="fas fa-align-left me-1"></i>Contenido
+                                    <span id="contenidoLockBadge" class="badge text-bg-secondary ms-2 d-none">Solo lectura</span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
@@ -277,6 +278,7 @@
                                     data-bs-target="#tab-comentarios" type="button" role="tab" aria-controls="tab-comentarios"
                                     aria-selected="false">
                                     <i class="fas fa-comments me-1"></i>Comentarios y Anexos
+                                    <span id="comentariosWaitBadge" class="badge text-bg-warning ms-2 d-none">Se habilita al crear</span>
                                 </button>
                             </li>
                         </ul>
@@ -301,8 +303,8 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label">Fecha a Terminar</label>
-                                        <input type="date" id="formFechaTerminar" class="form-control lockable-input">
+                                        <label class="form-label">Fecha a Terminar <span class="text-danger">*</span></label>
+                                        <input type="date" id="formFechaTerminar" class="form-control lockable-input" required>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="d-flex justify-content-between align-items-center mb-1">

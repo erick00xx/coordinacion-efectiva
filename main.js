@@ -79,7 +79,7 @@ function initQuill() {
 function initSelect2() {
     $('#formResponsables').select2({
         theme: 'bootstrap-5',
-        placeholder: 'Seleccionar responsables...',
+        placeholder: 'Adicionar responsable(s)...',
         allowClear: true,
         width: '100%',
         templateResult: formatS2Option,
@@ -666,10 +666,10 @@ function openModal(taskId = null) {
         $('#modalTitle').html('<i class="fas fa-edit me-2 text-warning"></i>Editar Tarea');
         $('#formTaskId').val(t.id);
         $('#formTitulo').val(t.titulo);
-        quillDesc.root.innerHTML = t.descripcion || '';
+        setQuillContent(quillDesc, t.descripcion || '');
         $('#formEstado').val(t.estado);
         $('#formFechaTerminar').val(toDateInputValue(t.fechaTerminar));
-        quillComentarios.root.innerHTML = t.comentarios || '';
+        setQuillContent(quillComentarios, t.comentarios || '');
 
         // Responsables
         const resps = t.responsables.split('||').map(r => r.trim()).filter(Boolean);
@@ -1094,6 +1094,23 @@ function getQuillHtml(editor) {
     return editor.root.innerHTML;
 }
 
+function setQuillContent(editor, html) {
+    if (!editor) return;
+    const cleanHtml = (html || '').trim();
+
+    if (!cleanHtml) {
+        editor.setText('');
+        return;
+    }
+
+    editor.clipboard.dangerouslyPasteHTML(cleanHtml, 'silent');
+
+    // Fallback visual: evita placeholder sobrepuesto si Quill dejó estado en blanco.
+    if (editor.getText().trim().length > 0) {
+        editor.root.classList.remove('ql-blank');
+    }
+}
+
 function stripHtml(html) {
     if (!html) return '';
     return String(html).replace(/<[^>]*>/g, ' ');
@@ -1182,6 +1199,7 @@ function applyPermissionsByMode(isEdit) {
         setTabEnabled('#tab-comentarios', true);
         setContentTabEditable(true);
         setCommentsTabEditable(true);
+        updatePermissionBadges('admin');
         return;
     }
 
@@ -1191,6 +1209,7 @@ function applyPermissionsByMode(isEdit) {
         setTabEnabled('#tab-comentarios', false);
         setContentTabEditable(true);
         setCommentsTabEditable(false);
+        updatePermissionBadges('create');
         return;
     }
 
@@ -1199,4 +1218,22 @@ function applyPermissionsByMode(isEdit) {
     setTabEnabled('#tab-comentarios', true);
     setContentTabEditable(false);
     setCommentsTabEditable(true);
+    updatePermissionBadges('edit');
+}
+
+function updatePermissionBadges(mode) {
+    const $contenidoBadge = $('#contenidoLockBadge');
+    const $comentariosBadge = $('#comentariosWaitBadge');
+
+    $contenidoBadge.addClass('d-none');
+    $comentariosBadge.addClass('d-none');
+
+    if (mode === 'create') {
+        $comentariosBadge.removeClass('d-none');
+        return;
+    }
+
+    if (mode === 'edit') {
+        $contenidoBadge.removeClass('d-none');
+    }
 }
