@@ -528,7 +528,8 @@ body {
 /* ============================================
    DROPZONE DE IMÁGENES
    ============================================ */
-#image-drop-zone {
+#image-drop-zone,
+#image-drop-zone-comments {
     border: 2px dashed var(--border);
     border-radius: 10px;
     cursor: pointer;
@@ -537,12 +538,14 @@ body {
     padding: 1.25rem;
 }
 
-#image-drop-zone.is-dragover {
+#image-drop-zone.is-dragover,
+#image-drop-zone-comments.is-dragover {
     border-color: var(--accent);
     background: rgba(99, 102, 241, 0.04);
 }
 
-#image-drop-zone.is-dragover .drop-content {
+#image-drop-zone.is-dragover .drop-content,
+#image-drop-zone-comments.is-dragover .drop-content {
     transform: scale(1.04);
 }
 
@@ -550,22 +553,33 @@ body {
     display: none;
 }
 
-#image-drop-zone.is-dragover .drop-text-default {
+#image-drop-zone.is-dragover .drop-text-default,
+#image-drop-zone-comments.is-dragover .drop-text-default {
     display: none;
 }
 
-#image-drop-zone.is-dragover .drop-text-active {
+#image-drop-zone.is-dragover .drop-text-active,
+#image-drop-zone-comments.is-dragover .drop-text-active {
     display: block;
 }
 
+#image-drop-zone.blocked,
+#image-drop-zone-comments.blocked {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 /* Previews de imágenes */
-#image-preview-wrapper {
+#image-preview-wrapper,
+#image-preview-wrapper-comments {
     overflow-x: auto;
     padding-bottom: 8px;
     white-space: nowrap;
 }
 
-#image-preview {
+#image-preview,
+#image-preview-comments {
     display: inline-flex;
     gap: 0.75rem;
     padding-top: 0.5rem;
@@ -713,6 +727,12 @@ body {
 .modal-task-tabs .nav-link.active {
     color: var(--primary);
     background: #eef2ff;
+}
+
+.modal-task-tabs .nav-link.disabled-tab,
+.modal-task-tabs .nav-link:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 
 .task-details-panel {

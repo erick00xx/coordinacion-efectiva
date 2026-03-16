@@ -7,6 +7,8 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOyzv_e8ySQsa_
 
 const MAX_IMAGES = 8;
 const SEP = ' || '; // Separador para múltiples responsables e imágenes
+const CAP_DESC_PREFIX = 'D::';
+const CAP_COM_PREFIX = 'C::';
 
 // ============================================
 // VARIABLES GLOBALES
@@ -22,8 +24,12 @@ let _tareasCargadas = false;
 let taskModal = null;
 let quillDesc = null;
 let quillComentarios = null;
-let uploadedFiles = [];      // Nuevas imágenes seleccionadas en el form
-let existingImages = [];     // URLs de imágenes existentes (modo edición)
+let uploadedFilesDesc = [];      // Nuevas imágenes para descripción
+let uploadedFilesCom = [];       // Nuevas imágenes para comentarios
+let existingImagesDesc = [];     // URLs existentes de descripción
+let existingImagesCom = [];      // URLs existentes de comentarios
+let canEditContentTab = true;
+let canEditCommentsTab = true;
 
 const Toast = Swal.mixin({
     toast: true, position: 'top-end',
@@ -397,8 +403,9 @@ function renderTable(data) {
             fechaTerminarHtml = `<span class="small ${dateColorClass} d-block"><i class="fas fa-calendar-check me-1"></i><span style="opacity:.7;font-weight:400">Entrega:</span> ${formatFechaTerminar(t.fechaTerminar)}</span>`;
         }
 
-        // Imágenes count
-        const imgCount = t.capturas ? t.capturas.split('||').filter(u => u.trim()).length : 0;
+        // Imágenes count (descripción + comentarios)
+        const parsedCaps = parseCapturasByArea(t.capturas);
+        const imgCount = parsedCaps.desc.length + parsedCaps.com.length;
         const imgBadge = imgCount > 0
             ? `<span class="badge bg-light text-muted border ms-2" title="${imgCount} captura(s)"><i class="fas fa-image me-1"></i>${imgCount}</span>`
             : '';
@@ -456,17 +463,25 @@ function buildExpandContent(t) {
         ? `<div class="ql-snow"><div class="ql-editor p-0" style="font-size:.9rem">${t.descripcion}</div></div>`
         : '<em class="text-muted small">Sin descripción.</em>';
 
-    // Imágenes
-    let imgsHtml = '';
-    if (t.capturas) {
-        const urls = t.capturas.split('||').map(u => u.trim()).filter(Boolean);
-        if (urls.length > 0) {
-            imgsHtml = `<h6 class="mt-3 mb-2 fw-semibold" style="font-size:.82rem;text-transform:uppercase;letter-spacing:.4px;color:#64748b">Capturas</h6>
+        const caps = parseCapturasByArea(t.capturas);
+
+        // Imágenes descripción
+        let imgsDescHtml = '';
+        if (caps.desc.length > 0) {
+                imgsDescHtml = `<h6 class="mt-3 mb-2 fw-semibold" style="font-size:.82rem;text-transform:uppercase;letter-spacing:.4px;color:#64748b">Capturas (Descripción)</h6>
         <div class="detail-attachments">
-          ${urls.map(url => `<a href="${escHtml(url)}" target="_blank"><img src="${escHtml(url)}" alt="Captura" loading="lazy"></a>`).join('')}
+                    ${caps.desc.map(url => `<a href="${escHtml(url)}" target="_blank"><img src="${escHtml(url)}" alt="Captura" loading="lazy"></a>`).join('')}
         </div>`;
-        }
     }
+
+        // Imágenes comentarios
+        let imgsComHtml = '';
+        if (caps.com.length > 0) {
+                imgsComHtml = `<h6 class="mt-3 mb-2 fw-semibold" style="font-size:.82rem;text-transform:uppercase;letter-spacing:.4px;color:#64748b">Anexos de Comentarios</h6>
+                <div class="detail-attachments">
+                    ${caps.com.map(url => `<a href="${escHtml(url)}" target="_blank"><img src="${escHtml(url)}" alt="Anexo comentario" loading="lazy"></a>`).join('')}
+                </div>`;
+        }
 
     // Comentarios
     const comHtml = t.comentarios
@@ -479,14 +494,15 @@ function buildExpandContent(t) {
         : '';
 
     return `<div class="row g-3">
-      <div class="col-md-8">
+      <div class="col-md-6">
         <h6 class="mb-2 fw-semibold" style="font-size:.82rem;text-transform:uppercase;letter-spacing:.4px;color:#64748b">Descripción</h6>
         ${descripHtml}
-        ${imgsHtml}
+                ${imgsDescHtml}
       </div>
-      <div class="col-md-4">
+      <div class="col-md-6">
         <h6 class="mb-2 fw-semibold" style="font-size:.82rem;text-transform:uppercase;letter-spacing:.4px;color:#64748b">Comentarios</h6>
         ${comHtml}
+                ${imgsComHtml}
         <div class="mt-3">${updHtml}</div>
       </div>
     </div>`;
@@ -598,19 +614,17 @@ function initEventListeners() {
         }
     });
 
-    // Dropzone
-    const $dz = $('#image-drop-zone');
-    $dz.on('click', () => $('#imageUpload').click());
-    $dz.on('dragover', e => { e.preventDefault(); $dz.addClass('is-dragover'); });
-    $dz.on('dragleave', () => $dz.removeClass('is-dragover'));
-    $dz.on('drop', e => {
-        e.preventDefault(); $dz.removeClass('is-dragover');
-        handleFileSelection(e.originalEvent.dataTransfer.files);
-    });
-    $('#imageUpload').on('change', e => handleFileSelection(e.target.files));
+    // Dropzones (descripción / comentarios)
+    bindDropzone('#image-drop-zone', '#imageUpload', 'desc');
+    bindDropzone('#image-drop-zone-comments', '#imageUploadComments', 'com');
+
     $('#image-preview').on('click', '.remove-btn', function () {
-        uploadedFiles.splice(parseInt($(this).data('index')), 1);
-        renderPreviews();
+        uploadedFilesDesc.splice(parseInt($(this).data('index')), 1);
+        renderPreviews('desc');
+    });
+    $('#image-preview-comments').on('click', '.remove-btn', function () {
+        uploadedFilesCom.splice(parseInt($(this).data('index')), 1);
+        renderPreviews('com');
     });
 
     // Pegar imágenes en modal
@@ -619,14 +633,23 @@ function initEventListeners() {
         const files = Array.from(e.originalEvent.clipboardData.items)
             .filter(item => item.type.startsWith('image'))
             .map(item => item.getAsFile());
-        if (files.length) { e.preventDefault(); handleFileSelection(files); }
+        if (files.length) {
+            e.preventDefault();
+            const activeTab = $('#taskFormTabs .nav-link.active').data('bs-target');
+            handleFileSelection(files, activeTab === '#tab-comentarios' ? 'com' : 'desc');
+        }
     });
 
     // Eliminar imagen existente en edición
     $('#existing-images').on('click', '.remove-existing-btn', function () {
         const url = $(this).data('url');
-        existingImages = existingImages.filter(u => u !== url);
-        renderExistingImages();
+        existingImagesDesc = existingImagesDesc.filter(u => u !== url);
+        renderExistingImages('desc');
+    });
+    $('#existing-images-comments').on('click', '.remove-existing-btn', function () {
+        const url = $(this).data('url');
+        existingImagesCom = existingImagesCom.filter(u => u !== url);
+        renderExistingImages('com');
     });
 }
 
@@ -636,6 +659,8 @@ function initEventListeners() {
 
 function openModal(taskId = null) {
     clearForm();
+    const isEdit = !!taskId;
+
     if (taskId) {
         const t = tareasData.find(t => t.id == taskId); if (!t) return;
         $('#modalTitle').html('<i class="fas fa-edit me-2 text-warning"></i>Editar Tarea');
@@ -658,14 +683,24 @@ function openModal(taskId = null) {
 
         // Imágenes existentes
         if (t.capturas) {
-            existingImages = t.capturas.split('||').map(u => u.trim()).filter(Boolean);
-            renderExistingImages();
+            const caps = parseCapturasByArea(t.capturas);
+            existingImagesDesc = caps.desc;
+            existingImagesCom = caps.com;
+            renderExistingImages('desc');
+            renderExistingImages('com');
         }
     } else {
         $('#modalTitle').html('<i class="fas fa-plus me-2 text-primary"></i>Nueva Tarea');
         // Si es perfil no-admin, no preselectar nada extra
     }
-    activateTaskTab('#tab-contenido');
+
+    applyPermissionsByMode(isEdit);
+    if (isEdit && !isAdmin) {
+        activateTaskTab('#tab-comentarios');
+    } else {
+        activateTaskTab('#tab-contenido');
+    }
+
     taskModal.show();
 }
 
@@ -674,29 +709,70 @@ function clearForm() {
     $('#formTaskId').val('');
     if (quillDesc) quillDesc.setText('');
     if (quillComentarios) quillComentarios.setText('');
-    uploadedFiles = []; existingImages = [];
-    renderPreviews();
-    renderExistingImages();
+    uploadedFilesDesc = []; uploadedFilesCom = [];
+    existingImagesDesc = []; existingImagesCom = [];
+    renderPreviews('desc');
+    renderPreviews('com');
+    renderExistingImages('desc');
+    renderExistingImages('com');
     $('#imageUpload').val('');
+    $('#imageUploadComments').val('');
     $('#formResponsables').val(null).trigger('change');
+    applyPermissionsByMode(false);
 }
 
 // ============================================
 // IMÁGENES - VISTA PREVIA
 // ============================================
 
-function handleFileSelection(files) {
-    const arr = Array.from(files);
-    if (uploadedFiles.length + arr.length > MAX_IMAGES) {
-        return Swal.fire('Límite excedido', `Máximo ${MAX_IMAGES} imágenes en total.`, 'warning');
-    }
-    uploadedFiles.push(...arr);
-    renderPreviews();
+function bindDropzone(dropzoneSel, inputSel, area) {
+    const $dz = $(dropzoneSel);
+    const $input = $(inputSel);
+
+    $dz.on('click', () => {
+        if ($dz.hasClass('blocked')) return;
+        $input.click();
+    });
+    $dz.on('dragover', e => {
+        if ($dz.hasClass('blocked')) return;
+        e.preventDefault();
+        $dz.addClass('is-dragover');
+    });
+    $dz.on('dragleave', () => $dz.removeClass('is-dragover'));
+    $dz.on('drop', e => {
+        if ($dz.hasClass('blocked')) return;
+        e.preventDefault();
+        $dz.removeClass('is-dragover');
+        handleFileSelection(e.originalEvent.dataTransfer.files, area);
+    });
+
+    $input.on('change', e => handleFileSelection(e.target.files, area));
 }
 
-function renderPreviews() {
-    const $c = $('#image-preview').empty();
-    uploadedFiles.forEach((file, i) => {
+function handleFileSelection(files, area = 'desc') {
+    if ((area === 'desc' && !canEditContentTab) || (area === 'com' && !canEditCommentsTab)) {
+        return;
+    }
+
+    const arr = Array.from(files);
+    const currentLen = area === 'com' ? uploadedFilesCom.length : uploadedFilesDesc.length;
+    if (currentLen + arr.length > MAX_IMAGES) {
+        return Swal.fire('Límite excedido', `Máximo ${MAX_IMAGES} imágenes en total.`, 'warning');
+    }
+    if (area === 'com') {
+        uploadedFilesCom.push(...arr);
+    } else {
+        uploadedFilesDesc.push(...arr);
+    }
+    renderPreviews(area);
+}
+
+function renderPreviews(area = 'desc') {
+    const isCom = area === 'com';
+    const files = isCom ? uploadedFilesCom : uploadedFilesDesc;
+    const $c = isCom ? $('#image-preview-comments').empty() : $('#image-preview').empty();
+
+    files.forEach((file, i) => {
         const reader = new FileReader();
         reader.onload = e => {
             $c.append(`<div class="preview-image-container">
@@ -708,12 +784,15 @@ function renderPreviews() {
     });
 }
 
-function renderExistingImages() {
-    const $w = $('#existing-images-wrapper');
-    const $c = $('#existing-images').empty();
-    if (existingImages.length === 0) { $w.hide(); return; }
+function renderExistingImages(area = 'desc') {
+    const isCom = area === 'com';
+    const images = isCom ? existingImagesCom : existingImagesDesc;
+    const $w = isCom ? $('#existing-images-comments-wrapper') : $('#existing-images-wrapper');
+    const $c = isCom ? $('#existing-images-comments').empty() : $('#existing-images').empty();
+
+    if (images.length === 0) { $w.hide(); return; }
     $w.show();
-    existingImages.forEach(url => {
+    images.forEach(url => {
         $c.append(`<div class="existing-img-container me-2 mb-2">
         <img src="${escHtml(url)}" alt="Captura">
         <button type="button" class="remove-existing-btn" data-url="${escHtml(url)}" title="Quitar"><i class="fas fa-times"></i></button>
@@ -725,10 +804,10 @@ function renderExistingImages() {
 // SUBIDA DE IMÁGENES A DRIVE
 // ============================================
 
-async function uploadAllImages() {
-    if (uploadedFiles.length === 0) return [];
+async function uploadAllImages(files) {
+    if (!files || files.length === 0) return [];
     const urls = [];
-    for (const file of uploadedFiles) {
+    for (const file of files) {
         const base64 = await fileToBase64(file);
         try {
             const r = await apiFetch('POST', 'uploadImage', {
@@ -773,17 +852,19 @@ async function handleFormSubmit() {
     const extras = $('#formResponsables').val() || [];
     extras.forEach(r => { if (!responsables.includes(r)) responsables.push(r); });
 
-    if (responsables.length === 0) {
+    if (!taskId && responsables.length === 0) {
         return Swal.fire('Atención', 'Debes seleccionar al menos un responsable.', 'warning');
     }
 
     showModalSpinner(true);
 
     try {
-        // Subir imágenes nuevas
-        const newImageUrls = await uploadAllImages();
-        const allImageUrls = [...existingImages, ...newImageUrls];
-        const capturas = allImageUrls.join(SEP);
+        // Subir imágenes por área
+        const newDescUrls = await uploadAllImages(uploadedFilesDesc);
+        const newComUrls = await uploadAllImages(uploadedFilesCom);
+
+        let finalDescUrls = [...existingImagesDesc, ...newDescUrls];
+        let finalComUrls = [...existingImagesCom, ...newComUrls];
 
         const tarea = {
             titulo: $('#formTitulo').val().trim(),
@@ -792,14 +873,29 @@ async function handleFormSubmit() {
             fechaTerminar: $('#formFechaTerminar').val(),
             estado: $('#formEstado').val(),
             comentarios: getQuillHtml(quillComentarios),
-            capturas: capturas
+            capturas: ''
         };
 
         if (taskId) {
             // EDITAR
             const original = tareasData.find(t => t.id == taskId);
+            if (!original) throw new Error('No se encontró la tarea a editar.');
+
+            // Usuario normal: solo puede actualizar comentarios y anexos de comentarios
+            if (!isAdmin) {
+                const capsOriginal = parseCapturasByArea(original.capturas);
+                finalDescUrls = capsOriginal.desc;
+
+                tarea.titulo = original.titulo;
+                tarea.descripcion = original.descripcion;
+                tarea.responsables = original.responsables;
+                tarea.fechaTerminar = original.fechaTerminar;
+                tarea.estado = original.estado;
+            }
+
+            tarea.capturas = serializeCapturasByArea(finalDescUrls, finalComUrls);
             tarea.id = taskId;
-            tarea.fechaCreacion = original ? original.fechaCreacion : '';
+            tarea.fechaCreacion = original.fechaCreacion || '';
 
             const r = await apiFetch('POST', 'updateTarea', { tarea });
             const idx = tareasData.findIndex(t => t.id == taskId);
@@ -809,6 +905,8 @@ async function handleFormSubmit() {
             Toast.fire({ icon: 'success', title: '¡Tarea actualizada!' });
 
         } else {
+            tarea.capturas = serializeCapturasByArea(finalDescUrls, finalComUrls);
+
             // CREAR (Optimistic UI)
             const tempId = 'temp-' + Date.now();
             const optimistic = {
@@ -1001,6 +1099,31 @@ function stripHtml(html) {
     return String(html).replace(/<[^>]*>/g, ' ');
 }
 
+function parseCapturasByArea(capturasStr) {
+    const result = { desc: [], com: [] };
+    if (!capturasStr) return result;
+
+    const parts = String(capturasStr).split('||').map(s => s.trim()).filter(Boolean);
+    parts.forEach(token => {
+        if (token.startsWith(CAP_DESC_PREFIX)) {
+            result.desc.push(token.slice(CAP_DESC_PREFIX.length));
+        } else if (token.startsWith(CAP_COM_PREFIX)) {
+            result.com.push(token.slice(CAP_COM_PREFIX.length));
+        } else {
+            // Compatibilidad con datos antiguos: todo va a descripción
+            result.desc.push(token);
+        }
+    });
+
+    return result;
+}
+
+function serializeCapturasByArea(descUrls = [], comUrls = []) {
+    const desc = (descUrls || []).filter(Boolean).map(url => `${CAP_DESC_PREFIX}${url}`);
+    const com = (comUrls || []).filter(Boolean).map(url => `${CAP_COM_PREFIX}${url}`);
+    return [...desc, ...com].join(SEP);
+}
+
 function getDateClass(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr + 'T00:00:00');
@@ -1025,4 +1148,55 @@ function activateTaskTab(targetSelector) {
     const btn = document.querySelector(`#taskFormTabs button[data-bs-target="${targetSelector}"]`);
     if (!btn || !window.bootstrap?.Tab) return;
     bootstrap.Tab.getOrCreateInstance(btn).show();
+}
+
+function setTabEnabled(targetSelector, enabled) {
+    const btn = document.querySelector(`#taskFormTabs button[data-bs-target="${targetSelector}"]`);
+    if (!btn) return;
+    btn.disabled = !enabled;
+    btn.classList.toggle('disabled-tab', !enabled);
+}
+
+function setContentTabEditable(canEdit) {
+    canEditContentTab = canEdit;
+    $('#tab-contenido .lockable-input').prop('disabled', !canEdit);
+    $('#formResponsables').prop('disabled', !canEdit).trigger('change.select2');
+
+    if (quillDesc) quillDesc.enable(canEdit);
+
+    $('#image-drop-zone').toggleClass('blocked', !canEdit);
+    $('#tab-contenido .remove-btn, #tab-contenido .remove-existing-btn').toggle(canEdit);
+}
+
+function setCommentsTabEditable(canEdit) {
+    canEditCommentsTab = canEdit;
+    if (quillComentarios) quillComentarios.enable(canEdit);
+    $('#image-drop-zone-comments').toggleClass('blocked', !canEdit);
+    $('#tab-comentarios .remove-btn, #tab-comentarios .remove-existing-btn').toggle(canEdit);
+}
+
+function applyPermissionsByMode(isEdit) {
+    // Admin: acceso completo siempre
+    if (isAdmin) {
+        setTabEnabled('#tab-contenido', true);
+        setTabEnabled('#tab-comentarios', true);
+        setContentTabEditable(true);
+        setCommentsTabEditable(true);
+        return;
+    }
+
+    if (!isEdit) {
+        // Usuario normal creando: pestaña comentarios bloqueada
+        setTabEnabled('#tab-contenido', true);
+        setTabEnabled('#tab-comentarios', false);
+        setContentTabEditable(true);
+        setCommentsTabEditable(false);
+        return;
+    }
+
+    // Usuario normal editando: primera pestaña solo lectura, segunda habilitada
+    setTabEnabled('#tab-contenido', true);
+    setTabEnabled('#tab-comentarios', true);
+    setContentTabEditable(false);
+    setCommentsTabEditable(true);
 }

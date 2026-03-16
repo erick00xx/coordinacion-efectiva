@@ -274,9 +274,9 @@
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="tab-detalles-btn" data-bs-toggle="tab"
-                                    data-bs-target="#tab-detalles" type="button" role="tab" aria-controls="tab-detalles"
+                                    data-bs-target="#tab-comentarios" type="button" role="tab" aria-controls="tab-comentarios"
                                     aria-selected="false">
-                                    <i class="fas fa-circle-info me-1"></i>Detalles y Comentarios
+                                    <i class="fas fa-comments me-1"></i>Comentarios y Anexos
                                 </button>
                             </li>
                         </ul>
@@ -287,8 +287,36 @@
                                 <!-- Título -->
                                 <div class="mb-3">
                                     <label class="form-label">Título de la Tarea <span class="text-danger">*</span></label>
-                                    <input type="text" id="formTitulo" class="form-control"
+                                    <input type="text" id="formTitulo" class="form-control lockable-input"
                                         placeholder="Ej: Revisar informe mensual" required>
+                                </div>
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Estado <span class="text-danger">*</span></label>
+                                        <select id="formEstado" class="form-select lockable-input" required>
+                                            <option value="En Proceso">En Proceso</option>
+                                            <option value="Terminado">Terminado</option>
+                                            <option value="No terminado">No terminado</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Fecha a Terminar</label>
+                                        <input type="date" id="formFechaTerminar" class="form-control lockable-input">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label mb-0">Responsable(s) <span class="text-danger"
+                                                    id="respAsterisk">*</span></label>
+                                            <span id="responsableFijo" class="d-none"></span>
+                                        </div>
+                                        <select id="formResponsables" class="form-select" multiple>
+                                            <!-- opciones por JS -->
+                                        </select>
+                                        <small id="respHelpText" class="text-muted d-none" style="font-size:.75rem">
+                                            <i class="fas fa-info-circle me-1"></i>Agrega responsables adicionales
+                                        </small>
+                                    </div>
                                 </div>
 
                                 <!-- Descripción (Quill) -->
@@ -328,43 +356,38 @@
                                 </div>
                             </div>
 
-                            <div class="tab-pane fade" id="tab-detalles" role="tabpanel" aria-labelledby="tab-detalles-btn">
+                            <div class="tab-pane fade" id="tab-comentarios" role="tabpanel" aria-labelledby="tab-detalles-btn">
                                 <div class="p-3 rounded-3 task-details-panel">
-                                    <!-- Estado -->
-                                    <div class="mb-3">
-                                        <label class="form-label">Estado <span class="text-danger">*</span></label>
-                                        <select id="formEstado" class="form-select" required>
-                                            <option value="En Proceso">En Proceso</option>
-                                            <option value="Terminado">Terminado</option>
-                                            <option value="No terminado">No terminado</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Fecha a terminar -->
-                                    <div class="mb-3">
-                                        <label class="form-label">Fecha a Terminar</label>
-                                        <input type="date" id="formFechaTerminar" class="form-control">
-                                    </div>
-
-                                    <!-- Responsables -->
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label mb-0">Responsable(s) <span class="text-danger"
-                                                    id="respAsterisk">*</span></label>
-                                            <span id="responsableFijo" class="d-none"></span>
-                                        </div>
-                                        <select id="formResponsables" class="form-select" multiple>
-                                            <!-- opciones por JS -->
-                                        </select>
-                                        <small id="respHelpText" class="text-muted d-none" style="font-size:.75rem">
-                                            <i class="fas fa-info-circle me-1"></i>Agrega responsables adicionales
-                                        </small>
-                                    </div>
-
                                     <!-- Comentarios (Quill) -->
-                                    <div class="mb-1">
+                                    <div class="mb-3">
                                         <label class="form-label">Comentarios</label>
                                         <div id="editorComentarios"></div>
+                                    </div>
+
+                                    <!-- Adjuntar anexos para comentarios -->
+                                    <div class="mb-1">
+                                        <label class="form-label"><i class="fas fa-paperclip me-1 text-muted"></i>Anexos de Comentarios</label>
+
+                                        <div id="existing-images-comments-wrapper" class="mb-2" style="display:none">
+                                            <div class="d-flex gap-2 flex-wrap" id="existing-images-comments"></div>
+                                        </div>
+
+                                        <div id="image-drop-zone-comments">
+                                            <div class="drop-content">
+                                                <div class="drop-text-default">
+                                                    <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                                    <p class="mb-0 text-muted small">Arrastra imágenes, pega (Ctrl+V) o haz clic</p>
+                                                </div>
+                                                <div class="drop-text-active">
+                                                    <i class="fas fa-thumbs-up fa-2x text-primary mb-2"></i>
+                                                    <p class="mb-0 text-primary small">¡Suelta para agregar!</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <input type="file" id="imageUploadComments" multiple accept="image/*" class="d-none">
+                                        <div id="image-preview-wrapper-comments">
+                                            <div id="image-preview-comments"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
